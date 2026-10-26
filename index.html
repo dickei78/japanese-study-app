@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>일본어 원서 독해 학습기 | AI 読書ノート</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Serif+JP:wght@500;700&family=Pretendard:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    body {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+    }
+    .font-japanese {
+      font-family: 'Noto Sans JP', sans-serif;
+    }
+    .font-japanese-serif {
+      font-family: 'Noto Serif JP', serif;
+    }
+    ruby {
+      ruby-position: over;
+    }
+    rt {
+      font-size: 0.6em;
+      color: #dc2626; /* reddish tone for clear furigana readability */
+      font-family: 'Noto Sans JP', sans-serif;
+      user-select: none;
+    }
+    .hide-ruby rt {
+      display: none;
+    }
+  </style>
+</head>
+<body class="bg-amber-50/40 text-stone-800 min-h-screen flex flex-col">
+
+  <!-- Header -->
+  <header class="bg-white/80 backdrop-blur border-b border-amber-200/60 sticky top-0 z-40">
+    <div class="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-rose-500 to-amber-500 flex items-center justify-center text-white shadow-sm font-bold text-lg font-japanese">
+          読
+        </div>
+        <div>
+          <h1 class="font-bold text-stone-900 leading-tight flex items-center gap-2">
+            일본어 원서 독해 노트
+            <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">Gemini AI</span>
+          </h1>
+          <p class="text-xs text-stone-500 hidden sm:block">사진 한 장으로 완성되는 교과서식 문장·어휘·문법 해설</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button id="apiKeyBtn" class="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-stone-200 hover:border-amber-400 bg-white transition shadow-sm font-medium">
+          <i data-lucide="key" class="w-3.5 h-3.5 text-amber-600"></i>
+          <span id="apiKeyStatusText">API 키 설정</span>
+        </button>
+        <button id="demoBtn" class="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-amber-100/80 hover:bg-amber-200/80 text-amber-900 transition font-medium">
+          <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-600"></i>
+          <span>체험용 샘플 보기</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-5xl mx-auto px-4 py-8 flex-1 w-full space-y-8">
+
+    <!-- Upload Section -->
+    <section class="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-amber-200/60 transition hover:border-amber-300">
+      <div class="text-center max-w-xl mx-auto mb-6">
+        <h2 class="text-xl font-bold text-stone-900 mb-1">원서 사진 올리기</h2>
+        <p class="text-sm text-stone-500">
+          공부하고 싶은 소설, 만화, 문제집의 페이지를 촬영하거나 캡처 이미지를 올려주세요.<br class="hidden sm:inline">
+          세로쓰기(縦書き)와 가로쓰기, 작은 후리가나도 정확히 분석합니다.
+        </p>
+      </div>
+
+      <!-- Drag & Drop Dropzone -->
+      <div id="dropzone" class="border-2 border-dashed border-stone-300 hover:border-amber-500 rounded-xl p-8 text-center cursor-pointer transition bg-stone-50/50 hover:bg-amber-50/30 flex flex-col items-center justify-center relative">
+        <input type="file" id="fileInput" accept="image/*" capture="environment" class="hidden">
+        
+        <div id="uploadPrompt" class="space-y-3">
+          <div class="w-14 h-14 mx-auto rounded-full bg-amber-100 flex items-center justify-center text-amber-700">
+            <i data-lucide="camera" class="w-7 h-7"></i>
+          </div>
+          <div>
+            <p class="font-medium text-stone-800">
+              클릭하여 사진 촬영 또는 파일 선택
+            </p>
+            <p class="text-xs text-stone-400 mt-1">또는 이미지를 여기로 드래그하거나 <kbd class="px-1.5 py-0.5 bg-stone-200 rounded text-stone-600 font-mono text-[10px]">Ctrl+V</kbd> 로 붙여넣기</p>
+          </div>
+          <div class="inline-flex items-center gap-2 text-xs text-stone-500 bg-white px-3 py-1 rounded-full border border-stone-200 shadow-2xs">
+            <i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-600"></i>
+            <span>세로쓰기 소설 / 만화 말풍선 / 신문 기사 완벽 지원</span>
+          </div>
+        </div>
+
+        <!-- Preview when selected -->
+        <div id="previewContainer" class="hidden w-full flex flex-col items-center gap-4">
+          <div class="relative max-h-72 rounded-lg overflow-hidden border border-stone-200 shadow-sm bg-stone-900">
+            <img id="imagePreview" src="" alt="선택한 이미지 미리보기" class="max-h-72 object-contain">
+            <button id="removeImageBtn" class="absolute top-2 right-2 bg-black/60 hover:bg-black/80 text-white rounded-full p-1.5 transition">
+              <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <button id="analyzeBtn" class="flex items-center gap-2 bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-semibold px-6 py-2.5 rounded-xl shadow-md transition transform active:scale-98">
+              <i data-lucide="book-open-check" class="w-5 h-5"></i>
+              <span>교과서식으로 독해 분석하기</span>
+            </button>
+            <button id="changeImageBtn" class="text-sm px-4 py-2.5 rounded-xl border border-stone-200 hover:bg-stone-50 text-stone-600 transition">
+              다른 사진 고르기
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Analysis Options -->
+      <div class="mt-4 flex flex-wrap items-center justify-between text-xs text-stone-500 gap-3 pt-3 border-t border-stone-100">
+        <div class="flex items-center gap-4">
+          <label class="flex items-center gap-1.5 cursor-pointer">
+            <input type="checkbox" id="optLiteralTrans" checked class="rounded text-amber-600 focus:ring-amber-500">
+            <span>직역(구조 파악용) 포함</span>
+          </label>
+          <label class="flex items-center gap-1.5 cursor-pointer">
+            <input type="checkbox" id="optGrammarDeep" checked class="rounded text-amber-600 focus:ring-amber-500">
+            <span>상세 문법/어미활용 해설</span>
+          </label>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <span>AI 모델:</span>
+          <select id="modelSelect" class="bg-stone-50 border border-stone-200 rounded px-2 py-0.5 text-xs text-stone-700">
+            <option value="gemini-2.5-flash">Gemini 2.5 Flash (권장: 빠르고 정확함)</option>
+            <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+            <option value="gemini-2.5-pro">Gemini 2.5 Pro (초고정밀 분석)</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <!-- Loading State -->
+    <section id="loadingSection" class="hidden bg-white rounded-2xl p-12 text-center shadow-sm border border-amber-200/60">
+      <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-amber-100 text-amber-600 mb-4 animate-bounce">
+        <i data-lucide="sparkles" class="w-8 h-8"></i>
+      </div>
+      <h3 class="text-lg font-bold text-stone-800 mb-2">원서 내용을 분석하고 있습니다...</h3>
+      <p class="text-sm text-stone-500 max-w-md mx-auto">
+        일본어 텍스트 추출, 후리가나 달기, 자연스러운 한국어 번역 및 JLPT 어휘와 핵심 문법을 교과서 형식으로 정리 중입니다.
+      </p>
+      <div class="mt-6 flex justify-center">
+        <div class="w-48 h-1.5 bg-stone-100 rounded-full overflow-hidden">
+          <div class="w-full h-full bg-gradient-to-r from-rose-500 to-amber-500 animate-pulse"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Results Section (Textbook Layout) -->
+    <section id="resultSection" class="hidden space-y-6">
+
+      <!-- Book Overview Header Bar -->
+      <div class="bg-gradient-to-r from-amber-700 to-stone-800 text-white rounded-2xl p-6 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2 mb-1">
+            <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-amber-500/30 text-amber-200 border border-amber-400/30">독해 본문</span>
+            <h2 id="resultTitle" class="text-xl font-bold">원서 독해 및 분석 노트</h2>
+          </div>
+          <p id="resultOverview" class="text-sm text-stone-300">내용 요약이 여기에 표시됩니다.</p>
+        </div>
+
+        <div class="flex items-center gap-2 self-start sm:self-auto">
+          <!-- Furigana Toggle -->
+          <button id="toggleRubyBtn" class="flex items-center gap-1.5 text-xs bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-xl transition border border-white/20 font-medium">
+            <i data-lucide="eye" class="w-4 h-4"></i>
+            <span id="rubyToggleLabel">후리가나 숨기기</span>
+          </button>
+          <!-- Read All Audio -->
+          <button id="readAllAudioBtn" class="flex items-center gap-1.5 text-xs bg-amber-500 hover:bg-amber-400 text-stone-900 px-3 py-2 rounded-xl transition font-semibold shadow">
+            <i data-lucide="volume-2" class="w-4 h-4"></i>
+            <span>전체 낭독</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Section 1: Sentence by Sentence Translation -->
+      <div class="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-amber-200/60">
+        <div class="flex items-center justify-between pb-4 mb-6 border-b border-stone-100">
+          <div class="flex items-center gap-2">
+            <span class="w-7 h-7 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center font-bold text-sm">1</span>
+            <h3 class="text-lg font-bold text-stone-900">문장별 정밀 독해 (一文ずつの読解)</h3>
+          </div>
+          <span class="text-xs text-stone-400">문장을 클릭하면 발음을 들을 수 있습니다</span>
+        </div>
+
+        <div id="sentencesContainer" class="space-y-6">
+          <!-- Sentences will be rendered here dynamically -->
+        </div>
+      </div>
+
+      <!-- Section 2: Vocabulary Table -->
+      <div class="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-amber-200/60">
+        <div class="flex items-center justify-between pb-4 mb-6 border-b border-stone-100">
+          <div class="flex items-center gap-2">
+            <span class="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-sm">2</span>
+            <h3 class="text-lg font-bold text-stone-900">핵심 단어 및 어휘 (重要語彙)</h3>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="exportVocabBtn" class="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg border border-stone-200 hover:bg-stone-50 text-stone-600 transition">
+              <i data-lucide="download" class="w-3.5 h-3.5"></i>
+              <span>단어장 CSV 내보내기</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm">
+            <thead>
+              <tr class="bg-stone-50 text-stone-600 text-xs uppercase border-b border-stone-200">
+                <th class="py-3 px-4 font-semibold">단어 / 표기</th>
+                <th class="py-3 px-4 font-semibold">요미가나</th>
+                <th class="py-3 px-4 font-semibold">품사 / 레벨</th>
+                <th class="py-3 px-4 font-semibold">한국어 뜻 & 문맥 설명</th>
+                <th class="py-3 px-2 text-center font-semibold">듣기</th>
+              </tr>
+            </thead>
+            <tbody id="vocabContainer" class="divide-y divide-stone-100">
+              <!-- Vocab rows will be rendered here dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Section 3: Grammar & Syntax Points -->
+      <div class="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-amber-200/60">
+        <div class="flex items-center justify-between pb-4 mb-6 border-b border-stone-100">
+          <div class="flex items-center gap-2">
+            <span class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-sm">3</span>
+            <h3 class="text-lg font-bold text-stone-900">구문 및 문법 해설 (文法・構文解説)</h3>
+          </div>
+          <span class="text-xs text-stone-400">교과서식 문형 정리</span>
+        </div>
+
+        <div id="grammarContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Grammar cards will be rendered here dynamically -->
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-stone-200 py-6 text-center text-xs text-stone-400">
+    <p>일본어 공부를 위한 AI 스마트 독서 노트 • Powered by Google Gemini</p>
+  </footer>
+
+  <!-- API Key Modal -->
+  <div id="apiKeyModal" class="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl border border-stone-200 space-y-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2 text-stone-900 font-bold text-lg">
+          <i data-lucide="key" class="w-5 h-5 text-amber-600"></i>
+          <span>Gemini API 키 등록</span>
+        </div>
+        <button id="closeModalBtn" class="text-stone-400 hover:text-stone-600 p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <p class="text-xs text-stone-600 leading-relaxed">
+        Google AI Studio에서 발급받은 무료 API 키를 입력해 주세요. API 키는 서버로 전송되지 않고 사용자의 웹 브라우저(<code class="bg-stone-100 px-1 py-0.5 rounded text-amber-700">localStorage</code>)에만 안전하게 보관됩니다.
+      </p>
+
+      <div class="space-y-1">
+        <label class="text-xs font-semibold text-stone-700">Google Gemini API Key</label>
+        <input type="password" id="apiKeyInput" placeholder="AIzaSy..." class="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm focus:outline-none focus:border-amber-500 font-mono">
+      </div>
+
+      <div class="pt-2 flex items-center justify-between">
+        <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="text-xs text-amber-700 hover:underline flex items-center gap-1 font-medium">
+          <span>API 키 발급받기 (무료)</span>
+          <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+        </a>
+        <div class="flex gap-2">
+          <button id="cancelModalBtn" class="px-3.5 py-1.5 text-xs text-stone-600 hover:bg-stone-100 rounded-lg transition">취소</button>
+          <button id="saveApiKeyBtn" class="px-4 py-1.5 text-xs bg-amber-600 hover:bg-amber-500 text-white font-medium rounded-lg transition shadow-sm">저장하기</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Application Logic -->
+  <script>
+    // Initialize Lucide Icons
+    lucide.createIcons();
+
+    // State
+    let currentImageBase64 = null;
+    let currentImageMimeType = null;
+    let analysisResult = null;
+    let hideRuby = false;
+
+    // Elements
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('fileInput');
+    const uploadPrompt = document.getElementById('uploadPrompt');
+    const previewContainer = document.getElementById('previewContainer');
+    const imagePreview = document.getElementById('imagePreview');
+    const removeImageBtn = document.getElementById('removeImageBtn');
+    const changeImageBtn = document.getElementById('changeImageBtn');
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    const loadingSection = document.getElementById('loadingSection');
+    const resultSection = document.getElementById('resultSection');
+    const demoBtn = document.getElementById('demoBtn');
+
+    // API Key Modal Elements
+    const apiKeyModal = document.getElementById('apiKeyModal');
+    const apiKeyBtn = document.getElementById('apiKeyBtn');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    const cancelModalBtn = document.getElementById('cancelModalBtn');
+    const saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
+    const apiKeyInput = document.getElementById('apiKeyInput');
+    const apiKeyStatusText = document.getElementById('apiKeyStatusText');
+
+    // Load stored API key
+    function updateApiKeyStatus() {
+      const key = localStorage.getItem('GEMINI_API_KEY');
+      if (key) {
+        apiKeyStatusText.textContent = 'API 키 등록됨';
+        apiKeyStatusText.classList.add('text-emerald-700');
+      } else {
+        apiKeyStatusText.textContent = 'API 키 설정';
+        apiKeyStatusText.classList.remove('text-emerald-700');
+      }
+    }
+    updateApiKeyStatus();
+
+    // Modal Events
+    apiKeyBtn.addEventListener('click', () => {
+      apiKeyInput.value = localStorage.getItem('GEMINI_API_KEY') || '';
+      apiKeyModal.classList.remove('hidden');
+    });
+    const closeModal = () => apiKeyModal.classList.add('hidden');
+    closeModalBtn.addEventListener('click', closeModal);
+    cancelModalBtn.addEventListener('click', closeModal);
+    saveApiKeyBtn.addEventListener('click', () => {
+      const val = apiKeyInput.value.trim();
+      if (val) {
+        localStorage.setItem('GEMINI_API_KEY', val);
+        alert('API 키가 브라우저에 안전하게 저장되었습니다.');
+      } else {
+        localStorage.removeItem('GEMINI_API_KEY');
+        alert('API 키가 삭제되었습니다.');
+      }
+      updateApiKeyStatus();
+      closeModal();
+    });
+
+    // File Upload / Dropzone Handlers
+    dropzone.addEventListener('click', (e) => {
+      if (e.target.closest('#removeImageBtn') || e.target.closest('#analyzeBtn') || e.target.closest('#changeImageBtn')) return;
+      fileInput.click();
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) handleImageFile(file);
+    });
+
+    // Drag and drop
+    dropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropzone.classList.add('border-amber-500', 'bg-amber-50/50');
+    });
+    dropzone.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('border-amber-500', 'bg-amber-50/50');
+    });
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('border-amber-500', 'bg-amber-50/50');
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        handleImageFile(e.dataTransfer.files[0]);
+      }
+    });
+
+    // Paste from clipboard (Ctrl+V)
+    window.addEventListener('paste', (e) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (const item of items) {
+        if (item.type.indexOf('image') !== -1) {
+          const blob = item.getAsFile();
+          handleImageFile(blob);
+          break;
+        }
+      }
+    });
+
+    function handleImageFile(file) {
+      if (!file.type.startsWith('image/')) {
+        alert('이미지 파일만 업로드할 수 있습니다.');
+        return;
+      }
+      currentImageMimeType = file.type;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const fullBase64 = e.target.result;
+        imagePreview.src = fullBase64;
+        currentImageBase64 = fullBase64.split(',')[1];
+        uploadPrompt.classList.add('hidden');
+        previewContainer.classList.remove('hidden');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    const resetImageSelection = () => {
+      fileInput.value = '';
+      currentImageBase64 = null;
+      currentImageMimeType = null;
+      imagePreview.src = '';
+      previewContainer.classList.add('hidden');
+      uploadPrompt.classList.remove('hidden');
+    };
+    removeImageBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      resetImageSelection();
+    });
+    changeImageBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      fileInput.click();
+    });
+
+    // Japanese Text-to-Speech (TTS)
+    function speakJapanese(text) {
+      if (!('speechSynthesis' in window)) {
+        alert('이 브라우저는 음성 합성을 지원하지 않습니다.');
+        return;
+      }
+      window.speechSynthesis.cancel(); // Stop ongoing speech
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'ja-JP';
+      utterance.rate = 0.85; // slightly slower for language learners
+      window.speechSynthesis.speak(utterance);
+    }
+
+    // Toggle Ruby (Furigana)
+    const toggleRubyBtn = document.getElementById('toggleRubyBtn');
+    const rubyToggleLabel = document.getElementById('rubyToggleLabel');
+    toggleRubyBtn.addEventListener('click', () => {
+      hideRuby = !hideRuby;
+      const container = document.getElementById('sentencesContainer');
+      if (hideRuby) {
+        container.classList.add('hide-ruby');
+        rubyToggleLabel.textContent = '후리가나 켜기';
+      } else {
+        container.classList.remove('hide-ruby');
+        rubyToggleLabel.textContent = '후리가나 숨기기';
+      }
+    });
+
+    // Read all sentences sequentially
+    document.getElementById('readAllAudioBtn').addEventListener('click', () => {
+      if (!analysisResult || !analysisResult.sentences) return;
+      const fullText = analysisResult.sentences.map(s => s.japanese).join(' ');
+      speakJapanese(fullText);
+    });
+
+    // Gemini API Prompt Construction
+    function getAnalysisPrompt() {
+      const includeLiteral = document.getElementById('optLiteralTrans').checked;
+      const deepGrammar = document.getElementById('optGrammarDeep').checked;
+
+      return `당신은 일본어 교육 및 원서 독해 전문가입니다.
+첨부된 원서 이미지(소설, 만화, 수필, 기사 등 세로쓰기/가로쓰기 포함)의 내용을 정확히 읽어내고, 한국인 일본어 학습자를 위한 [교과서식 정밀 독해 노트]를 작성해주세요.
+
+다음 JSON 규격에 반드시 맞추어 순수 JSON 문자열만 출력하세요:
+{
+  "title": "원서 내용의 제목 또는 핵심 요약 (예: '나쓰메 소세키 - 마음', '카페에서의 대화' 등)",
+  "overview": "본문 내용에 대한 1~2줄의 친절한 줄거리/상황 요약 (한국어)",
+  "sentences": [
+    {
+      "id": 1,
+      "japanese": "漢字入り原文 (기호나 오타 없이 완벽한 일본어 문장)",
+      "ruby": "한자에 루비 태그가 적용된 HTML 문자열. 예: <ruby>私<rt>わたし</rt></ruby>は<ruby>静<rt>しず</rt></ruby>かに...",
+      "romaji": "로마자 발음 표기",
+      "translation": "자연스러운 한국어 번역",
+      ${includeLiteral ? '"literal_translation": "어순과 직역을 살린 한국어 번역",' : ''}
+      "sentence_nuance": "문장의 뉘앙스, 화자의 태도나 문학적 표현 팁 (간결하게)"
+    }
+  ],
+  "vocabulary": [
+    {
+      "word": "원형 표기 (예: 訪れる, 穏やか)",
+      "reading": "히라가나 요미가나 (예: おとずれる, おだやか)",
+      "pos": "품사 (예: 5단동사, 하1단동사, 형용동사, 명사, 부사)",
+      "jlpt": "JLPT 등급 (N1~N5 중 추정)",
+      "meaning": "본문 문맥에서의 한국어 뜻",
+      "example": "본문 속 쓰임 구문"
+    }
+  ],
+  "grammar": [
+    {
+      "expression": "문법/구문 표현 (예: ~わけにはいかない, ~つつある, ~としたら)",
+      "reading": "표현 읽는 법",
+      "meaning": "문법적 의미 (예: ~할 수는 없다)",
+      "explanation": "결합 형태(접속 형태) 및 뉘앙스, 헷갈리기 쉬운 점에 대한 교과서식 상세 설명",
+      "related_sentence_id": 1
+    }
+  ]
+}
+
+주의사항:
+1. 세로쓰기(縦書き) 원서의 경우 우측 상단에서 좌측 하단 순서로 글을 올바르게 읽어야 합니다.
+2. 루비 태그(ruby)는 한자가 있는 모든 단어에 대해 누락 없이 정확한 요미가나(rt)를 달아주세요.
+3. 어휘는 본문에서 학습 가치가 높은 핵심 단어 5~10개를 선별해주세요.
+4. 문법은 해당 문장에서 쓰인 핵심 문형이나 조사/복합동사 활용을 3~6개 선별하여 깊이 있게 설명해주세요.`;
+    }
+
+    // Call Gemini API
+    analyzeBtn.addEventListener('click', async () => {
+      const apiKey = localStorage.getItem('GEMINI_API_KEY');
+      if (!apiKey) {
+        apiKeyModal.classList.remove('hidden');
+        alert('먼저 Gemini API 키를 등록해주세요! (Google AI Studio에서 무료로 즉시 발급 가능합니다)');
+        return;
+      }
+
+      if (!currentImageBase64) {
+        alert('분석할 이미지를 먼저 선택해주세요.');
+        return;
+      }
+
+      const model = document.getElementById('modelSelect').value;
+
+      loadingSection.classList.remove('hidden');
+      resultSection.classList.add('hidden');
+      loadingSection.scrollIntoView({ behavior: 'smooth' });
+
+      try {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  { text: getAnalysisPrompt() },
+                  {
+                    inlineData: {
+                      mimeType: currentImageMimeType,
+                      data: currentImageBase64
+                    }
+                  }
+                ]
+              }
+            ],
+            generationConfig: {
+              responseMimeType: "application/json",
+              temperature: 0.2
+            }
+          })
+        });
+
+        if (!response.ok) {
+          const errData = await response.json();
+          throw new Error(errData.error?.message || 'Gemini API 호출에 실패했습니다.');
+        }
+
+        const data = await response.json();
+        const rawJsonText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!rawJsonText) {
+          throw new Error('응답 데이터를 찾을 수 없습니다.');
+        }
+
+        const parsed = JSON.parse(rawJsonText);
+        renderAnalysisResults(parsed);
+
+      } catch (err) {
+        console.error(err);
+        alert(`분석 중 오류가 발생했습니다:\n${err.message}`);
+      } finally {
+        loadingSection.classList.add('hidden');
+      }
+    });
+
+    // Render Results in Textbook Layout
+    function renderAnalysisResults(data) {
+      analysisResult = data;
+
+      document.getElementById('resultTitle').textContent = data.title || '원서 독해 및 분석 노트';
+      document.getElementById('resultOverview').textContent = data.overview || '';
+
+      // 1. Sentences
+      const sentencesContainer = document.getElementById('sentencesContainer');
+      sentencesContainer.innerHTML = '';
+
+      if (data.sentences && data.sentences.length > 0) {
+        data.sentences.forEach((s, idx) => {
+          const card = document.createElement('div');
+          card.className = 'p-4 sm:p-5 rounded-xl border border-stone-200/80 bg-stone-50/50 hover:bg-amber-50/20 transition space-y-3';
+          
+          card.innerHTML = `
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex items-start gap-3 flex-1">
+                <span class="flex-shrink-0 w-6 h-6 rounded-full bg-stone-200 text-stone-700 font-bold text-xs flex items-center justify-center mt-1">
+                  ${idx + 1}
+                </span>
+                <div class="space-y-1.5 flex-1">
+                  <!-- Japanese Ruby Text -->
+                  <div class="text-xl sm:text-2xl font-japanese-serif leading-loose tracking-wide text-stone-900 select-text">
+                    ${s.ruby || s.japanese}
+                  </div>
+                  <!-- Romaji -->
+                  ${s.romaji ? `<div class="text-xs font-mono text-stone-400">${s.romaji}</div>` : ''}
+                </div>
+              </div>
+
+              <!-- Audio Button -->
+              <button onclick="speakJapanese('${s.japanese.replace(/'/g, "\\'")}')" class="p-2 rounded-lg bg-white border border-stone-200 hover:border-amber-400 text-stone-600 hover:text-amber-600 transition shadow-2xs" title="일본어 발음 듣기">
+                <i data-lucide="volume-2" class="w-4 h-4"></i>
+              </button>
+            </div>
+
+            <!-- Translations -->
+            <div class="pl-9 space-y-1 pt-2 border-t border-stone-200/60 text-sm">
+              <div class="font-medium text-stone-800 flex items-baseline gap-2">
+                <span class="text-[11px] font-semibold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded">번역</span>
+                <span>${s.translation}</span>
+              </div>
+              ${s.literal_translation ? `
+                <div class="text-xs text-stone-500 flex items-baseline gap-2">
+                  <span class="text-[10px] font-medium text-stone-500 bg-stone-200 px-1 py-0.2 rounded">직역</span>
+                  <span>${s.literal_translation}</span>
+                </div>
+              ` : ''}
+              ${s.sentence_nuance ? `
+                <div class="text-xs text-amber-800/90 bg-amber-100/40 p-2 rounded-lg mt-2 flex items-start gap-1.5">
+                  <i data-lucide="info" class="w-3.5 h-3.5 text-amber-600 flex-shrink-0 mt-0.5"></i>
+                  <span>${s.sentence_nuance}</span>
+                </div>
+              ` : ''}
+            </div>
+          `;
+          sentencesContainer.appendChild(card);
+        });
+      }
+
+      // 2. Vocabulary
+      const vocabContainer = document.getElementById('vocabContainer');
+      vocabContainer.innerHTML = '';
+
+      if (data.vocabulary && data.vocabulary.length > 0) {
+        data.vocabulary.forEach((v) => {
+          const row = document.createElement('tr');
+          row.className = 'hover:bg-amber-50/30 transition';
+
+          const jlptColor = {
+            'N1': 'bg-purple-100 text-purple-800 border-purple-200',
+            'N2': 'bg-blue-100 text-blue-800 border-blue-200',
+            'N3': 'bg-emerald-100 text-emerald-800 border-emerald-200',
+            'N4': 'bg-amber-100 text-amber-800 border-amber-200',
+            'N5': 'bg-stone-100 text-stone-800 border-stone-200'
+          }[v.jlpt] || 'bg-stone-100 text-stone-700 border-stone-200';
+
+          row.innerHTML = `
+            <td class="py-3 px-4 font-bold font-japanese text-base text-stone-900">${v.word}</td>
+            <td class="py-3 px-4 font-japanese text-sm text-stone-600">${v.reading}</td>
+            <td class="py-3 px-4">
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <span class="text-[11px] font-semibold px-2 py-0.5 rounded border ${jlptColor}">${v.jlpt || 'N/A'}</span>
+                <span class="text-xs text-stone-500">${v.pos || ''}</span>
+              </div>
+            </td>
+            <td class="py-3 px-4">
+              <div class="font-medium text-stone-800">${v.meaning}</div>
+              ${v.example ? `<div class="text-xs text-stone-400 font-japanese mt-0.5">${v.example}</div>` : ''}
+            </td>
+            <td class="py-3 px-2 text-center">
+              <button onclick="speakJapanese('${v.word}')" class="p-1.5 rounded-lg hover:bg-stone-100 text-stone-500 hover:text-amber-600 transition" title="발음 듣기">
+                <i data-lucide="volume-2" class="w-4 h-4"></i>
+              </button>
+            </td>
+          `;
+          vocabContainer.appendChild(row);
+        });
+      }
+
+      // 3. Grammar
+      const grammarContainer = document.getElementById('grammarContainer');
+      grammarContainer.innerHTML = '';
+
+      if (data.grammar && data.grammar.length > 0) {
+        data.grammar.forEach((g) => {
+          const card = document.createElement('div');
+          card.className = 'p-4 rounded-xl border border-stone-200/90 bg-stone-50/40 hover:border-emerald-300 transition space-y-2';
+          card.innerHTML = `
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <span class="text-[11px] font-semibold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">문법 포인트</span>
+                <h4 class="text-base font-bold font-japanese text-stone-900 mt-1">${g.expression}</h4>
+                ${g.reading ? `<span class="text-xs text-stone-400">${g.reading}</span>` : ''}
+              </div>
+            </div>
+            <div class="text-xs font-semibold text-rose-700 bg-rose-50 px-2 py-1 rounded inline-block">
+              의미: ${g.meaning}
+            </div>
+            <p class="text-xs text-stone-600 leading-relaxed pt-1">
+              ${g.explanation}
+            </p>
+          `;
+          grammarContainer.appendChild(card);
+        });
+      }
+
+      resultSection.classList.remove('hidden');
+      resultSection.scrollIntoView({ behavior: 'smooth' });
+      lucide.createIcons();
+    }
+
+    // Export Vocabulary to CSV
+    document.getElementById('exportVocabBtn').addEventListener('click', () => {
+      if (!analysisResult || !analysisResult.vocabulary) return;
+      const headers = ['단어', '요미가나', '품사', 'JLPT', '한국어뜻', '예문'];
+      const rows = analysisResult.vocabulary.map(v => [
+        `"${v.word || ''}"`,
+        `"${v.reading || ''}"`,
+        `"${v.pos || ''}"`,
+        `"${v.jlpt || ''}"`,
+        `"${(v.meaning || '').replace(/"/g, '""')}"`,
+        `"${(v.example || '').replace(/"/g, '""')}"`
+      ]);
+      const csvContent = "\uFEFF" + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `일본어_단어장_${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    });
+
+    // Demo Sample Data (for instant testing without API key)
+    demoBtn.addEventListener('click', () => {
+      const demoData = {
+        title: "나쓰메 소세키(夏目漱石) - 마음(こころ) 중",
+        overview: "주인공이 바닷가에서 '선생님'이라 부르는 인물과 처음 마주쳤을 때의 인상적인 풍경을 묘사한 대표 명문입니다.",
+        sentences: [
+          {
+            id: 1,
+            japanese: "私はその人を常に先生と呼んでいた。",
+            ruby: "<ruby>私<rt>わたし</rt></ruby>はその<ruby>人<rt>ひと</rt></ruby>を<ruby>常<rt>つね</rt></ruby>に<ruby>先生<rt>せんせい</rt></ruby>と<ruby>呼<rt>よ</rt></ruby>んでいた。",
+            romaji: "Watashi wa sono hito o tsune ni sensei to yonde ita.",
+            translation: "나는 그 사람을 항상 선생님이라고 부르고 있었다.",
+            literal_translation: "나는 그 사람을 항상 선생님이라고 부르고 있었다.",
+            sentence_nuance: "소설의 첫 문장으로, 화자와 '선생님'이라는 인물 간의 각별하고 신비로운 관계성을 암시합니다."
+          },
+          {
+            id: 2,
+            japanese: "だからここでもただ先生と書くだけで、本名は打ち明けない。",
+            ruby: "だからここでもただ<ruby>先生<rt>せんせい</rt></ruby>と<ruby>書<rt>か</rt></ruby>くだけで、<ruby>本名<rt>ほんみょう</rt></ruby>は<ruby>打<rt>う</rt></ruby>ち<ruby>明<rt>あ</rt></ruby>けない。",
+            romaji: "Dakara koko de mo tada sensei to kaku dake de, honmyou wa uchiakenai.",
+            translation: "그래서 여기서도 그저 선생님이라고만 적을 뿐, 본명은 털어놓지 않는다.",
+            literal_translation: "그러므로 여기에서도 단지 선생님이라고 쓸 뿐이고, 본명은 털어놓지 않는다.",
+            sentence_nuance: "打ち明ける(털어놓다)의 부정형을 사용하여 비밀스러운 톤을 유지하고 있습니다."
+          },
+          {
+            id: 3,
+            japanese: "夏休みになると、私は鎌倉の海岸へ出かけて、波の音を聞きながら歩いた。",
+            ruby: "<ruby>夏休<rt>なつやす</rt></ruby>みになると、<ruby>私<rt>わたし</rt></ruby>は<ruby>鎌倉<rt>かまくら</rt></ruby>の<ruby>海岸<rt>かいがん</rt></ruby>へ<ruby>出<rt>で</rt></ruby>かけて、<ruby>波<rt>なみ</rt></ruby>の<ruby>音<rt>おと</rt></ruby>を<ruby>聞<rt>き</rt></ruby>きながら<ruby>歩<rt>ある</rt></ruby>いた。",
+            romaji: "Natsuyasumi ni naru to, watashi wa Kamakura no kaigan e dekakete, nami no oto o kikinagara aruita.",
+            translation: "여름방학이 되면 나는 가마쿠라 해안으로 나가 파도 소리를 들으며 걸었다.",
+            literal_translation: "여름방학이 되자, 나는 가마쿠라의 해안으로 외출해서 파도의 소리를 들으면서 걸었다.",
+            sentence_nuance: "시간의 흐름(~になると)과 동시 동작(~ながら)이 어우러진 서정적인 묘사입니다."
+          }
+        ],
+        vocabulary: [
+          {
+            word: "常に",
+            reading: "つねに",
+            pos: "부사",
+            jlpt: "N3",
+            meaning: "항상, 언제나",
+            example: "常に先生と呼んでいた"
+          },
+          {
+            word: "打ち明ける",
+            reading: "うちあける",
+            pos: "하1단 타동사",
+            jlpt: "N2",
+            meaning: "털어놓다, 고백하다",
+            example: "本名は打ち明けない"
+          },
+          {
+            word: "出かける",
+            reading: "でかける",
+            pos: "하1단 자동사",
+            jlpt: "N4",
+            meaning: "외출하다, 나가다",
+            example: "海岸へ出かけて"
+          },
+          {
+            word: "海岸",
+            reading: "かいがん",
+            pos: "명사",
+            jlpt: "N4",
+            meaning: "해안, 바닷가",
+            example: "鎌倉の海岸"
+          },
+          {
+            word: "波",
+            reading: "なみ",
+            pos: "명사",
+            jlpt: "N3",
+            meaning: "파도, 물결",
+            example: "波の音"
+          }
+        ],
+        grammar: [
+          {
+            expression: "~と呼ぶ",
+            reading: "とよぶ",
+            meaning: "~라고 부르다",
+            explanation: "조사 'と'는 인용격 조사로, 명사 뒤에 붙어 'A를 B라고 칭하다/부르다'의 구문을 형성합니다.",
+            related_sentence_id: 1
+          },
+          {
+            expression: "~だけで",
+            reading: "だけで",
+            meaning: "~하는 것만으로, ~할 뿐이고",
+            explanation: "동사 사전형 뒤에 한정의 조사 'だけ'와 조사 'で'가 결합하여 다른 동작 없이 해당 조건에 머무름을 나타냅니다.",
+            related_sentence_id: 2
+          },
+          {
+            expression: "동사 연용형 + ながら",
+            reading: "ながら",
+            meaning: "~하면서 (동시 동작)",
+            explanation: "동사의 ます형(연용형) 어간 뒤에 접속하여, 두 가지 동작이 동시에 이루어짐을 표현합니다 (聞く → 聞きながら).",
+            related_sentence_id: 3
+          },
+          {
+            expression: "~になると",
+            reading: "になると",
+            meaning: "~가 되면",
+            explanation: "명사 + になる(변화) 뒤에 가정/조건의 접속조사 'と'가 붙어 자연스러운 계절이나 시간의 도래를 나타냅니다.",
+            related_sentence_id: 3
+          }
+        ]
+      };
+
+      renderAnalysisResults(demoData);
+    });
+  </script>
+</body>
+</html>
